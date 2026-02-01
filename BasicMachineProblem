@@ -1,0 +1,182 @@
+package com.bootcamp;
+
+import java.time.Duration;
+import java.util.List;
+
+import org.openqa.selenium.Alert;
+import org.openqa.selenium.By;
+import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.WebElement;
+import org.openqa.selenium.chrome.ChromeDriver;
+import org.openqa.selenium.chrome.ChromeOptions;
+import org.openqa.selenium.support.ui.ExpectedConditions;
+import org.openqa.selenium.support.ui.Select;
+import org.openqa.selenium.support.ui.WebDriverWait;
+import org.testng.Assert;
+import org.testng.annotations.AfterMethod;
+import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.Test;
+
+import io.github.bonigarcia.wdm.WebDriverManager;
+
+public class MachineProblem {
+    WebDriver driver;
+
+    @BeforeMethod
+    public void setup() {
+
+        WebDriverManager.chromedriver().setup();
+        ChromeOptions option = new ChromeOptions();
+        option.addArguments("--disable-notifications");
+        driver = new ChromeDriver();
+        driver.manage().window().maximize();
+    }
+
+    @Test
+    public void checkboxTest() throws InterruptedException {
+
+        // PHASE 1
+        // Navigate to the-internet.herokuapp.com/checkboxes
+        driver.get("https://the-internet.herokuapp.com/");
+        String pageTitle1 = driver.getTitle();
+        Assert.assertEquals(pageTitle1, "The Internet");
+        System.out.println("The Page title is: " + pageTitle1);
+        Thread.sleep(2000);
+
+        // ------------------------------------------------------------------------
+
+        // PHASE 2
+        driver.findElement(By.cssSelector("a[href='/login']")).click();
+        driver.findElement(By.id("username")).sendKeys("tomsmith");
+        driver.findElement(By.id("password")).sendKeys("SuperSecretPassword!");
+        driver.findElement(By.cssSelector("button[type='submit']")).click();
+        Thread.sleep(5000);
+        WebElement successMsg = driver.findElement(By.cssSelector(".flash.success"));
+        Assert.assertTrue(successMsg.getText().contains("You logged into a secure area!"),
+                "Incorrect success message.");
+        // Click Logout
+        Thread.sleep(2000);
+        driver.findElement(By.cssSelector(".icon-2x.icon-signout")).click();
+
+        // Navigate back to Homepage
+        driver.navigate().to("https://the-internet.herokuapp.com/");
+        Thread.sleep(2000);
+
+        // ------------------------------------------------------------------------
+
+        // PHASE 3
+        driver.findElement(By.cssSelector("a[href='/dropdown']")).click();
+        Thread.sleep(2000);
+
+        WebElement dropdownElement = driver.findElement(By.id("dropdown"));
+        Select dropdown = new Select(dropdownElement);
+
+        // Select Option 2 and check if it is selected
+        dropdown.selectByValue("2");
+        Assert.assertEquals(dropdown.getFirstSelectedOption().getText(), "Option 2");
+        System.out.println("Selected Option: " + dropdown.getFirstSelectedOption().getText());
+        Thread.sleep(2000);
+
+        // Navigate back to Homepage
+        driver.navigate().to("https://the-internet.herokuapp.com/");
+        Thread.sleep(2000);
+
+        // ------------------------------------------------------------------------
+
+        // PHASE 4
+        // Locate checkboxes
+        driver.findElement(By.cssSelector("a[href='/checkboxes']")).click();
+        Thread.sleep(2000);
+
+        List<WebElement> checkBoxes = driver.findElements(By.cssSelector("input[type='checkbox']"));
+        WebElement checkBox1 = driver.findElement(By.xpath("//input[1]"));
+        // Tick all checkboxes
+        if (!checkBox1.isSelected()) {
+            checkBox1.click();
+        }
+        Thread.sleep(2000);
+
+        // Assert that all checkboxes are ticked
+        for (WebElement checkBox : checkBoxes) {
+            Assert.assertTrue(checkBox.isSelected(), "Checkbox is not selected");
+        }
+
+        // Navigate back to Homepage
+        driver.navigate().to("https://the-internet.herokuapp.com/");
+        Thread.sleep(2000);
+
+        // ------------------------------------------------------------------------
+
+        // PHASE 5
+        driver.findElement(By.cssSelector("a[href='/javascript_alerts']")).click();
+        Thread.sleep(2000);
+
+        // Select Click for JS Confirm
+        driver.findElement(By.cssSelector("button[onclick='jsConfirm()']")).click();
+        Thread.sleep(2000);
+
+        // Click Ok on the popup alert
+        Alert alert1 = driver.switchTo().alert();
+        alert1.accept();
+
+        // WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+
+        // Check result text is correct
+        // problem: was not getting the correct value for result
+        // solution: convert result value to string
+        WebElement result1 = driver.findElement(By.id("result"));
+        String resultText = result1.getText();
+        System.out.println("The result is: " + resultText);
+        Assert.assertEquals(resultText, "You clicked: Ok");
+        Thread.sleep(2000);
+
+        // // Navigate back to Homepage
+        driver.navigate().to("https://the-internet.herokuapp.com/");
+        Thread.sleep(2000);
+
+        // ------------------------------------------------------------------------
+
+        // PHASE 6
+        // Go to Dynamic Loading
+        driver.findElement(By.cssSelector("a[href='/dynamic_loading']")).click();
+        Thread.sleep(2000);
+
+        // Click on Example 1
+        driver.findElement(By.cssSelector("a[href='/dynamic_loading/1']")).click();
+        Thread.sleep(2000);
+        WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+
+        // Click Start
+        // problem: ran into a problem where selenium was unable to detect the start
+        // button
+        // solution: waited until the start button is shown then detect it.
+        WebElement startBtn = wait.until(ExpectedConditions.visibilityOfElementLocated(By.tagName("button")));
+        startBtn.click();
+
+        // Wait for the loading bar to disappear
+        WebElement loadingBar = driver.findElement(By.id("loading"));
+        wait.until(ExpectedConditions.invisibilityOf(loadingBar));
+        System.out.println("Loading bar disappeared.");
+
+        // Wait for the "Hello World!" text to appear
+        // problem: same problem, unable to detect hello world msg
+        // solution: waited until Hello world is shown then get Text and store to string
+        // variable
+        WebElement helloMessage = wait
+                .until(ExpectedConditions.visibilityOfElementLocated(By.cssSelector("div[id='finish'] h4")));
+        String finishMsg = helloMessage.getText();
+        System.out.println(finishMsg + " message appeared.");
+
+        // Assert that the text is visible and correct
+        assert helloMessage.isDisplayed() : "Hello World! message is not displayed.";
+        assert helloMessage.getText().equals("Hello World!")
+                : "Text does not match 'Hello World!'. Actual: " + helloMessage.getText();
+        System.out.println("Assertion passed: Hello World! is visible and correct.");
+
+    }
+
+    @AfterMethod
+    public void tearDown() {
+        driver.quit();
+    }
+}
